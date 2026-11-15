@@ -14,7 +14,7 @@ people can join.
 - **Chat and activity feed**: messages with typing indicators, plus automatic
   notes such as "Ada moved 'Write tests' to Done".
 - **Shared timer**: anyone can start a countdown that runs for the whole board.
-- **Guest identities**: each visitor gets a random name and colour, stored in a
+- **Guest identities**: each new visitor starts as Kshitij Dua with a random colour, stored in a
   signed session cookie, and can rename themselves.
 - **Light and dark themes.**
 - **Sharing:** a Share button with copyable edit and view-only links and QR codes.

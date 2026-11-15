@@ -8,7 +8,8 @@ defmodule Huddle.IdentityTest do
     second = Identity.generate()
 
     assert first["id"] != second["id"]
-    assert first["name"] =~ ~r/^\w+ \w+$/
+    assert first["name"] == "Kshitij Dua"
+    assert second["name"] == "Kshitij Dua"
     assert first["color"] =~ ~r/^#[0-9a-f]{6}$/
   end
 
