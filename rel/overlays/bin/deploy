@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+# Ecto's migration lock serializes concurrent container starts.
+./huddle eval Huddle.Release.migrate
+PHX_SERVER=true exec ./huddle start

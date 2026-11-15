@@ -51,7 +51,7 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :huddle, Huddle.Repo,
-    # ssl: true,
+    ssl: System.get_env("DATABASE_SSL", "true") in ~w(true 1),
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
@@ -70,18 +70,21 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
+  host =
+    System.get_env("PHX_HOST") || System.get_env("VERCEL_PROJECT_PRODUCTION_URL") ||
+      System.get_env("VERCEL_URL") || "example.com"
 
   config :huddle, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :huddle, HuddleWeb.Endpoint,
+    check_origin: :conn,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
       # See the documentation on https://bandit.hexdocs.pm/Bandit.html#t:options/0
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0}
+      ip: {0, 0, 0, 0}
     ],
     secret_key_base: secret_key_base
 

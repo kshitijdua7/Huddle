@@ -35,3 +35,7 @@ huddle-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Local deployment configuration and credentials.
+/.vercel/
+/.env*
+
