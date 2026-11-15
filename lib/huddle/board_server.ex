@@ -2,15 +2,17 @@ defmodule Huddle.BoardServer do
   @moduledoc """
   One lightweight process per active board, holding state that should be shared
   by everyone on the board but is not worth storing in the database: the
-  shared countdown timer.
+  shared countdown timer and who is presenting.
 
   Processes are started on demand under `Huddle.BoardSupervisor` (a
   `DynamicSupervisor`), registered by board id in `Huddle.BoardRegistry`, and
-  shut themselves down after `@idle_timeout` without a running timer. If one
-  crashes, only that board's timer is lost; every other board keeps running.
+  shut themselves down after `@idle_timeout` without a running timer or a
+  presenter. If one crashes, only that board's timer is lost; every other board
+  keeps running.
 
   Timer changes are broadcast on the board's PubSub topic as
-  `{:timer_started, ends_at}`, `:timer_stopped` and `:timer_finished`.
+  `{:timer_started, ends_at}`, `:timer_stopped` and `:timer_finished`, and
+  presenter changes as `{:presenter_changed, presenter_or_nil}`.
   """
   use GenServer, restart: :transient
 
@@ -47,6 +49,34 @@ defmodule Huddle.BoardServer do
     end
   end
 
+  @doc "Returns who is presenting as `%{id, name, color}`, or `nil`."
+  def presenter(board_id) do
+    case whereis(board_id) do
+      nil -> nil
+      pid -> safe_call(pid, :presenter, nil)
+    end
+  end
+
+  @doc """
+  Makes `user` the board's presenter, replacing anyone who was presenting.
+
+  `pid` is the presenter's LiveView process. It is monitored, so presenting
+  ends by itself when they close the tab or lose their connection.
+  """
+  def start_presenting(board_id, %{id: _, name: _, color: _} = user, pid) when is_pid(pid) do
+    board_id
+    |> ensure_started()
+    |> GenServer.call({:start_presenting, user, pid})
+  end
+
+  @doc "Stops presenting, if `user_id` is the current presenter."
+  def stop_presenting(board_id, user_id) do
+    case whereis(board_id) do
+      nil -> :ok
+      pid -> safe_call(pid, {:stop_presenting, user_id}, :ok)
+    end
+  end
+
   @doc "Returns the pid of the board's process, or `nil` if it is not running."
   def whereis(board_id) do
     case Registry.lookup(Huddle.BoardRegistry, board_id) do
@@ -75,7 +105,8 @@ defmodule Huddle.BoardServer do
 
   @impl true
   def init(board_id) do
-    {:ok, %{board_id: board_id, ends_at: nil, token: nil}, @idle_timeout}
+    state = %{board_id: board_id, ends_at: nil, token: nil, presenter: nil, presenter_ref: nil}
+    {:ok, state, @idle_timeout}
   end
 
   @impl true
@@ -100,6 +131,28 @@ defmodule Huddle.BoardServer do
     {:reply, :ok, state, timeout(state)}
   end
 
+  def handle_call(:presenter, _from, state) do
+    {:reply, state.presenter, state, timeout(state)}
+  end
+
+  def handle_call({:start_presenting, user, pid}, _from, state) do
+    if state.presenter_ref, do: Process.demonitor(state.presenter_ref, [:flush])
+    broadcast(state.board_id, {:presenter_changed, user})
+
+    state = %{state | presenter: user, presenter_ref: Process.monitor(pid)}
+    {:reply, :ok, state, timeout(state)}
+  end
+
+  def handle_call({:stop_presenting, user_id}, _from, state) do
+    state =
+      case state.presenter do
+        %{id: ^user_id} -> clear_presenter(state)
+        _someone_else -> state
+      end
+
+    {:reply, :ok, state, timeout(state)}
+  end
+
   @impl true
   def handle_info({:timer_finished, token}, %{token: token} = state) do
     broadcast(state.board_id, :timer_finished)
@@ -113,12 +166,28 @@ defmodule Huddle.BoardServer do
     {:noreply, state, timeout(state)}
   end
 
+  # The presenter's LiveView process ended.
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, %{presenter_ref: ref} = state) do
+    state = clear_presenter(state)
+    {:noreply, state, timeout(state)}
+  end
+
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
+    {:noreply, state, timeout(state)}
+  end
+
   def handle_info(:timeout, state) do
     {:stop, :normal, state}
   end
 
-  # Never time out while a timer is running.
-  defp timeout(%{ends_at: nil}), do: @idle_timeout
+  defp clear_presenter(state) do
+    if state.presenter_ref, do: Process.demonitor(state.presenter_ref, [:flush])
+    broadcast(state.board_id, {:presenter_changed, nil})
+    %{state | presenter: nil, presenter_ref: nil}
+  end
+
+  # Never time out while a timer is running or someone is presenting.
+  defp timeout(%{ends_at: nil, presenter: nil}), do: @idle_timeout
   defp timeout(_state), do: :infinity
 
   defp broadcast(board_id, message) do

@@ -66,4 +66,47 @@ defmodule Huddle.BoardServerTest do
 
     assert %DateTime{} = BoardServer.timer(other_id)
   end
+
+  describe "presenting" do
+    @ada %{id: "ada", name: "Ada", color: "#f59e0b"}
+    @grace %{id: "grace", name: "Grace", color: "#ec4899"}
+
+    test "nobody presents until someone starts", %{board_id: board_id} do
+      assert BoardServer.presenter(board_id) == nil
+      assert BoardServer.stop_presenting(board_id, "ada") == :ok
+    end
+
+    test "start_presenting/3 sets the presenter and a newcomer can take over",
+         %{board_id: board_id} do
+      assert BoardServer.start_presenting(board_id, @ada, self()) == :ok
+      assert_receive {:presenter_changed, @ada}
+      assert BoardServer.presenter(board_id) == @ada
+
+      assert BoardServer.start_presenting(board_id, @grace, self()) == :ok
+      assert_receive {:presenter_changed, @grace}
+      assert BoardServer.presenter(board_id) == @grace
+    end
+
+    test "stop_presenting/2 only works for the current presenter", %{board_id: board_id} do
+      BoardServer.start_presenting(board_id, @ada, self())
+
+      BoardServer.stop_presenting(board_id, "grace")
+      assert BoardServer.presenter(board_id) == @ada
+
+      BoardServer.stop_presenting(board_id, "ada")
+      assert_receive {:presenter_changed, nil}
+      assert BoardServer.presenter(board_id) == nil
+    end
+
+    test "presenting ends when the presenter's process exits", %{board_id: board_id} do
+      pid = start_supervised!({Agent, fn -> :ok end})
+      BoardServer.start_presenting(board_id, @ada, pid)
+      assert_receive {:presenter_changed, @ada}
+
+      stop_supervised!(Agent)
+
+      assert_receive {:presenter_changed, nil}
+      assert BoardServer.presenter(board_id) == nil
+    end
+  end
 end

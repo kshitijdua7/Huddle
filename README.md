@@ -17,6 +17,26 @@ people can join.
 - **Guest identities**: each visitor gets a random name and colour, stored in a
   signed session cookie, and can rename themselves.
 - **Light and dark themes.**
+- **Sharing:** a Share button with copyable edit and view-only links and QR codes.
+  View-only access is enforced on the server.
+- **Recent boards:** the home page remembers boards opened by your guest identity.
+- **Board tools:** edit card text, choose coloured labels, manage columns, react
+  to cards and messages, and search or filter cards by label.
+- **Meeting tools:** hide and reveal vote counts, present with shared scrolling
+  and card spotlights, and export a board as Markdown or CSV.
+- **Animated interface:** responsive layouts, hover transitions, and timer
+  celebration effects with reduced-motion support.
+
+## Sharing a board
+
+Open a board and select **Share**. Choose **Can edit** or **View only**, then
+copy the link or scan its QR code. Anyone with an edit link can change the board;
+give viewers the separate view-only link.
+
+The app currently runs at `http://localhost:4000`. A localhost link only works
+on this Mac. Sharing with other computers requires a deployed app, a tunnel,
+or a development server configured to accept connections on your local network.
+The Share dialog uses the address you opened, so links and QR codes use that host.
 
 ## How it works
 

@@ -21,10 +21,13 @@ defmodule HuddleWeb.Router do
     pipe_through :browser
 
     post "/session", SessionController, :update
+    get "/b/:slug/export/:format", ExportController, :edit_link
+    get "/v/:view_slug/export/:format", ExportController, :view_link
 
     live_session :default, on_mount: [{HuddleWeb.UserSession, :default}] do
       live "/", HomeLive
-      live "/b/:slug", BoardLive
+      live "/b/:slug", BoardLive, :edit
+      live "/v/:view_slug", BoardLive, :view
     end
   end
 

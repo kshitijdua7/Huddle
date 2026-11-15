@@ -2,7 +2,8 @@ defmodule HuddleWeb.SessionControllerTest do
   use HuddleWeb.ConnCase, async: true
 
   test "POST /session renames the visitor and returns them to where they were", %{conn: conn} do
-    conn = post(conn, ~p"/session", %{"user" => %{"name" => " Kshitij "}, "return_to" => "/b/abc"})
+    conn =
+      post(conn, ~p"/session", %{"user" => %{"name" => " Kshitij "}, "return_to" => "/b/abc"})
 
     assert redirected_to(conn) == "/b/abc"
     assert get_session(conn, :user)["name"] == "Kshitij"

@@ -19,7 +19,7 @@ defmodule Huddle.Boards.Column do
   def changeset(column, attrs) do
     column
     |> cast(attrs, [:title])
-    |> update_change(:title, &String.trim/1)
+    |> update_change(:title, &(&1 && String.trim(&1)))
     |> validate_required([:title])
     |> validate_length(:title, max: 40)
   end

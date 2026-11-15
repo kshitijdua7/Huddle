@@ -6,8 +6,16 @@ defmodule Huddle.Boards.Card do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @labels ~w(idea bug urgent question win)
+
+  @doc "The labels a card can carry."
+  def labels, do: @labels
+
   schema "cards" do
     field :title, :string
+    field :label, :string
+    # %{"👍" => [user_id, ...]}, see `Huddle.Reactions`
+    field :reactions, :map, default: %{}
     field :position, :integer, default: 0
     field :votes, :integer, default: 0
     field :author_name, :string
@@ -22,9 +30,10 @@ defmodule Huddle.Boards.Card do
   @doc false
   def changeset(card, attrs) do
     card
-    |> cast(attrs, [:title])
-    |> update_change(:title, &String.trim/1)
+    |> cast(attrs, [:title, :label])
+    |> update_change(:title, &(&1 && String.trim(&1)))
     |> validate_required([:title])
     |> validate_length(:title, max: 140)
+    |> validate_inclusion(:label, @labels)
   end
 end

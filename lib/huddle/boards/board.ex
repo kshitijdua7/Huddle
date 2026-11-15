@@ -8,6 +8,10 @@ defmodule Huddle.Boards.Board do
   schema "boards" do
     field :name, :string
     field :slug, :string
+    # The slug of the read-only link. Whoever has it can watch but not edit.
+    field :view_slug, :string
+    # While true, vote counts are hidden from everyone ("anonymous voting").
+    field :votes_hidden, :boolean, default: false
 
     has_many :columns, Huddle.Boards.Column, preload_order: [asc: :position, asc: :id]
     has_many :cards, Huddle.Boards.Card
@@ -23,5 +27,6 @@ defmodule Huddle.Boards.Board do
     |> validate_required([:name])
     |> validate_length(:name, min: 2, max: 60)
     |> unique_constraint(:slug)
+    |> unique_constraint(:view_slug)
   end
 end

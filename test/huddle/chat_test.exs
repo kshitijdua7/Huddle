@@ -51,4 +51,26 @@ defmodule Huddle.ChatTest do
 
     assert Chat.list_messages(board) == []
   end
+
+  test "toggle_reaction/3 updates the message and broadcasts it", %{board: board, user: user} do
+    {:ok, message} = Chat.create_message(board, user, %{"body" => "hello"})
+    Boards.subscribe(board)
+
+    assert {:ok, updated} = Chat.toggle_reaction(message, "grace", "🎉")
+    assert updated.reactions == %{"🎉" => ["grace"]}
+    assert_receive {:message_updated, %{reactions: %{"🎉" => ["grace"]}}}
+
+    assert {:ok, %{reactions: reactions}} = Chat.toggle_reaction(updated, "grace", "🎉")
+    assert reactions == %{}
+    assert Chat.toggle_reaction(message, "grace", "nope") == {:error, :invalid_emoji}
+  end
+
+  test "get_message/2 only finds messages of the given board", %{board: board, user: user} do
+    {:ok, message} = Chat.create_message(board, user, %{"body" => "hello"})
+    other = board_fixture(%{"name" => "Other"})
+
+    assert Chat.get_message(board, "#{message.id}").id == message.id
+    assert Chat.get_message(other, message.id) == nil
+    assert Chat.get_message(board, "abc") == nil
+  end
 end

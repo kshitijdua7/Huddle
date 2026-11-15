@@ -32,28 +32,31 @@ defmodule HuddleWeb.Layouts do
 
   def app(assigns) do
     ~H"""
+    <div class="h-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
     <div class={[
-      "flex flex-col bg-base-100 text-base-content",
+      "flex flex-col text-base-content",
       if(@fill, do: "h-dvh overflow-hidden", else: "min-h-dvh")
     ]}>
-      <header class="flex h-16 shrink-0 items-center gap-3 border-b border-base-300 px-4 sm:px-6">
-        <.link navigate={~p"/"} id="home-link" class="flex items-center gap-2">
-          <span class="grid size-8 place-items-center rounded-xl bg-primary text-primary-content shadow-sm">
-            <.icon name="hero-squares-2x2-solid" class="size-5" />
+      <header class="h-glass relative z-40 flex h-14 shrink-0 items-center gap-3 border-x-0 border-t-0 px-4 sm:px-6">
+        <.link navigate={~p"/"} id="home-link" class="group flex items-center gap-2.5">
+          <span class="grid size-8 place-items-center rounded-xl bg-linear-to-br from-primary to-accent text-primary-content shadow-lg shadow-primary/30 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6">
+            <.icon name="hero-fire-solid" class="size-5" />
           </span>
-          <span class="text-lg font-semibold tracking-tight">Huddle</span>
+          <span class="font-display text-lg font-bold">Huddle</span>
         </.link>
 
         <div class="flex-1"></div>
 
         <.theme_toggle />
 
-        <details :if={@current_user} id="user-menu" class="dropdown dropdown-end">
-          <summary class="btn btn-ghost gap-2 px-2">
+        <details :if={@current_user} id="user-menu" class="relative">
+          <summary class="h-btn h-btn-ghost list-none gap-2 px-1.5 [&::-webkit-details-marker]:hidden">
             <.avatar name={@current_user["name"]} color={@current_user["color"]} />
             <span class="hidden max-w-32 truncate text-sm sm:inline">{@current_user["name"]}</span>
+            <.icon name="hero-chevron-down-micro" class="size-4 text-muted" />
           </summary>
-          <div class="dropdown-content z-50 mt-2 w-64 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-xl">
+          <div class="h-menu h-glass absolute right-0 z-50 mt-2 w-64 rounded-2xl !bg-base-100 p-4 shadow-2xl">
             <.form
               for={%{}}
               action={~p"/session"}
@@ -61,7 +64,7 @@ defmodule HuddleWeb.Layouts do
               id="rename-form"
               class="space-y-2"
             >
-              <label for="rename-input" class="text-xs font-medium text-base-content/70">
+              <label for="rename-input" class="text-muted text-xs font-medium">
                 Your display name
               </label>
               <input type="hidden" name="return_to" value={@return_to} />
@@ -72,9 +75,9 @@ defmodule HuddleWeb.Layouts do
                 value={@current_user["name"]}
                 maxlength="24"
                 required
-                class="input input-sm w-full"
+                class="h-input"
               />
-              <button type="submit" class="btn btn-primary btn-sm w-full">Save</button>
+              <button type="submit" class="h-btn h-btn-primary w-full">Save</button>
             </.form>
           </div>
         </details>
@@ -101,7 +104,7 @@ defmodule HuddleWeb.Layouts do
     ~H"""
     <span
       class={[
-        "grid shrink-0 place-items-center rounded-full font-semibold text-white select-none",
+        "grid shrink-0 place-items-center rounded-full font-bold text-white select-none",
         @class
       ]}
       style={"background-color: #{@color}"}
@@ -168,31 +171,27 @@ defmodule HuddleWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 [[data-theme-source=system]_&]:!left-0 transition-[left]" />
+    <div
+      id="theme-toggle"
+      class="relative flex items-center rounded-full border border-[var(--line)] bg-[var(--soft)] p-0.5"
+    >
+      <div class="absolute top-0.5 bottom-0.5 left-0.5 w-7 rounded-full bg-base-100 shadow-sm transition-transform duration-300 ease-[var(--ease-spring)] [[data-theme=light]_&]:translate-x-7 [[data-theme=dark]_&]:translate-x-14 [[data-theme-source=system]_&]:!translate-x-0" />
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        :for={
+          {theme, icon} <- [
+            {"system", "hero-computer-desktop-micro"},
+            {"light", "hero-sun-micro"},
+            {"dark", "hero-moon-micro"}
+          ]
+        }
+        type="button"
+        class="relative grid size-7 cursor-pointer place-items-center opacity-60 transition hover:opacity-100"
         phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="system"
+        data-phx-theme={theme}
+        aria-label={"Use #{theme} theme"}
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name={icon} class="size-4" />
       </button>
     </div>
     """

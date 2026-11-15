@@ -26,8 +26,13 @@ if Repo.aggregate(Board, :count) == 0 do
     {:ok, _card} = Boards.create_card(column, user, %{"title" => title})
   end
 
-  {:ok, _message} = Chat.create_message(board, ada, %{"body" => "Welcome! Everything here updates live."})
-  {:ok, _message} = Chat.create_message(board, grace, %{"body" => "Try moving a card and watch the activity feed."})
+  {:ok, _message} =
+    Chat.create_message(board, ada, %{"body" => "Welcome! Everything here updates live."})
+
+  {:ok, _message} =
+    Chat.create_message(board, grace, %{
+      "body" => "Try moving a card and watch the activity feed."
+    })
 
   IO.puts("Seeded the demo board at /b/#{board.slug}")
 end

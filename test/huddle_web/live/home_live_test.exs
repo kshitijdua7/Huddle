@@ -4,6 +4,8 @@ defmodule HuddleWeb.HomeLiveTest do
   import Phoenix.LiveViewTest
   import Huddle.Fixtures
 
+  alias Huddle.Boards
+
   test "shows the create form and an empty state", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/")
 
@@ -12,11 +14,27 @@ defmodule HuddleWeb.HomeLiveTest do
     assert has_element?(view, "#user-menu")
   end
 
-  test "lists recent boards", %{conn: conn} do
-    board = board_fixture(%{"name" => "Roadmap"})
+  test "lists the boards this visitor has opened, and no one else's", %{conn: conn} do
+    user = user_fixture()
+    conn = Plug.Test.init_test_session(conn, %{user: user})
+
+    mine = board_fixture(%{"name" => "Roadmap"})
+    watched = board_fixture(%{"name" => "Retro"})
+    theirs = board_fixture(%{"name" => "Someone else's"})
+    Boards.record_visit(mine, user["id"], false)
+    Boards.record_visit(watched, user["id"], true)
+
     {:ok, view, _html} = live(conn, ~p"/")
 
-    assert has_element?(view, "#board-#{board.id}", "Roadmap")
+    assert has_element?(view, "#board-#{mine.id} a[href='/b/#{mine.slug}']", "Roadmap")
+
+    assert has_element?(
+             view,
+             "#board-#{watched.id} a[href='/v/#{watched.view_slug}']",
+             "view only"
+           )
+
+    refute has_element?(view, "#board-#{theirs.id}")
     refute has_element?(view, "#boards-empty")
   end
 
@@ -37,13 +55,5 @@ defmodule HuddleWeb.HomeLiveTest do
       |> follow_redirect(conn)
 
     assert has_element?(board_view, "#board-name", "Sprint 12")
-  end
-
-  test "a board created elsewhere appears without a reload", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/")
-
-    board = board_fixture(%{"name" => "Made in another tab"})
-
-    assert has_element?(view, "#board-#{board.id}", "Made in another tab")
   end
 end

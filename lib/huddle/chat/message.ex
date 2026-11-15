@@ -11,6 +11,8 @@ defmodule Huddle.Chat.Message do
     field :kind, :string, default: "user"
     field :author_name, :string
     field :author_color, :string
+    # %{"👍" => [user_id, ...]}, see `Huddle.Reactions`
+    field :reactions, :map, default: %{}
 
     belongs_to :board, Huddle.Boards.Board
 
